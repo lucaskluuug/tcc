@@ -1,0 +1,12 @@
+torch>=2.2
+torchvision>=0.17
+ultralytics>=8.2
+numpy>=1.26
+pandas>=2.2
+matplotlib>=3.8
+pillow>=10.2
+opencv-python-headless>=4.9
+pyyaml>=6.0
+scikit-learn>=1.4
+albumentations>=1.4
+pytest>=8.0

@@ -1,0 +1,110 @@
+{
+  "run_name": "frcnn_r50_v1",
+  "seeds": [
+    42,
+    43,
+    44,
+    45,
+    46
+  ],
+  "levels": [
+    1.0,
+    0.9,
+    0.8,
+    0.7,
+    0.6,
+    0.5,
+    0.4,
+    0.3
+  ],
+  "por_nivel": [
+    {
+      "nivel_alvo": 1.0,
+      "iou_medio": 1.0,
+      "acuracia": 0.5923845193508115,
+      "score_medio": 0.4083919378730906,
+      "taxa_acima_limiar": 0.5137328339575531,
+      "taxa_fundo_vence": 0.5,
+      "acuracia_std": 0.0,
+      "n": 1602,
+      "n_seeds": 5
+    },
+    {
+      "nivel_alvo": 0.9,
+      "iou_medio": 0.8982159025552982,
+      "acuracia": 0.5870162297128589,
+      "score_medio": 0.4032456656965704,
+      "taxa_acima_limiar": 0.5068664169787765,
+      "taxa_fundo_vence": 0.5053682896379526,
+      "acuracia_std": 0.0009466760853996851,
+      "n": 1602,
+      "n_seeds": 5
+    },
+    {
+      "nivel_alvo": 0.8,
+      "iou_medio": 0.7995386938312251,
+      "acuracia": 0.583270911360799,
+      "score_medio": 0.3843113768119794,
+      "taxa_acima_limiar": 0.48401997503121097,
+      "taxa_fundo_vence": 0.5289637952559301,
+      "acuracia_std": 0.0042474471501133745,
+      "n": 1602,
+      "n_seeds": 5
+    },
+    {
+      "nivel_alvo": 0.7,
+      "iou_medio": 0.6996525827713389,
+      "acuracia": 0.5729088639200999,
+      "score_medio": 0.3399479291399232,
+      "taxa_acima_limiar": 0.4357053682896379,
+      "taxa_fundo_vence": 0.5882646691635456,
+      "acuracia_std": 0.0029740647314785698,
+      "n": 1602,
+      "n_seeds": 5
+    },
+    {
+      "nivel_alvo": 0.6,
+      "iou_medio": 0.6001584530865459,
+      "acuracia": 0.5513108614232209,
+      "score_medio": 0.25357835515953164,
+      "taxa_acima_limiar": 0.3448189762796504,
+      "taxa_fundo_vence": 0.697378277153558,
+      "acuracia_std": 0.003957769658963133,
+      "n": 1602,
+      "n_seeds": 5
+    },
+    {
+      "nivel_alvo": 0.5,
+      "iou_medio": 0.49981820043730807,
+      "acuracia": 0.5252184769038701,
+      "score_medio": 0.11239608082359023,
+      "taxa_acima_limiar": 0.1652933832709113,
+      "taxa_fundo_vence": 0.8866416978776529,
+      "acuracia_std": 0.005576207599032992,
+      "n": 1602,
+      "n_seeds": 5
+    },
+    {
+      "nivel_alvo": 0.4,
+      "iou_medio": 0.40017759077202114,
+      "acuracia": 0.4397003745318352,
+      "score_medio": 0.019454463363384942,
+      "taxa_acima_limiar": 0.02409488139825214,
+      "taxa_fundo_vence": 0.9873907615480648,
+      "acuracia_std": 0.007367379587426005,
+      "n": 1602,
+      "n_seeds": 5
+    },
+    {
+      "nivel_alvo": 0.3,
+      "iou_medio": 0.29987037174930425,
+      "acuracia": 0.33533083645443196,
+      "score_medio": 0.0047581624783665805,
+      "taxa_acima_limiar": 0.0059925093632958205,
+      "taxa_fundo_vence": 0.9960049937578027,
+      "acuracia_std": 0.00694260310282111,
+      "n": 1602,
+      "n_seeds": 5
+    }
+  ]
+}

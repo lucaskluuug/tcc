@@ -1,0 +1,29 @@
+backbone: resnet101
+trainable_backbone_layers: 3
+anchor_sizes: [[32], [64], [128], [256], [512]]
+aspect_ratios: [[0.5, 1.0, 2.0], [0.5, 1.0, 2.0], [0.5, 1.0, 2.0], [0.5, 1.0, 2.0], [0.5, 1.0, 2.0]]
+min_size: 640
+max_size: 640
+
+rpn_fg_iou_thresh: 0.7
+rpn_bg_iou_thresh: 0.3
+rpn_pre_nms_top_n_train: 2000
+rpn_pre_nms_top_n_test: 1000
+rpn_post_nms_top_n_train: 2000
+rpn_post_nms_top_n_test: 1000
+rpn_nms_thresh: 0.7
+
+box_score_thresh: 0.25
+box_nms_thresh: 0.5
+box_detections_per_img: 100
+box_fg_iou_thresh: 0.5
+box_bg_iou_thresh: 0.5
+
+epochs: 30
+batch_size: 8
+lr: 0.005
+momentum: 0.9
+weight_decay: 0.0005
+lr_step_size: 8
+lr_gamma: 0.1
+pretrained_backbone: true

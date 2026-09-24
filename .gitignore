@@ -1,0 +1,24 @@
+.venv/
+.venv_test/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+data/raw/
+data/processed/
+data/cache/
+outputs/
+
+*.pt
+*.pth
+*.onnx
+
+FlickrLogos-32_dataset_v2.zip
+
+.claude/
+backup/
+*.log
+Handoff_TCC2_implementacao.md
+TCC I - Lucas Klug Arndt.pdf
+
+localization_sensitivity_seed*_raw.csv
