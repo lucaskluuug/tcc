@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pandas as pd
 
-NOMES_MODO = {"reducao": "Redução", "deslocamento": "Deslocamento"}
+NOMES_MODO = {"reducao": "Redução", "deslocamento": "Deslocamento", "ampliacao": "Ampliação"}
 
 
 def carregar(run_dir: str | Path) -> dict:
@@ -93,6 +93,9 @@ def tabela_degradacao(runs: list[dict]) -> pd.DataFrame:
     df = pd.concat(partes)
     largo = df.pivot_table(index=["modelo", "nivel_alvo"], columns="modo", values=["acuracia", "taxa_acima_limiar"])
     largo.columns = [f"{metrica}_{modo}" for metrica, modo in largo.columns]
+    if "taxa_limitada" in df.columns and (df["modo"] == "ampliacao").any():
+        ampl = df[df["modo"] == "ampliacao"].set_index(["modelo", "nivel_alvo"])[["iou_medio", "taxa_limitada"]]
+        largo = largo.join(ampl.add_suffix("_ampliacao"))
     return largo.reset_index().sort_values(["modelo", "nivel_alvo"], ascending=[True, False])
 
 
@@ -100,7 +103,7 @@ def grafico_degradacao(runs: list[dict], caminho: str | Path, limiar_treino: flo
     import matplotlib.pyplot as plt
 
     fig, eixos = plt.subplots(1, len(runs), figsize=(6 * len(runs), 4.5), sharey=True, squeeze=False)
-    cores = {"reducao": "#1f77b4", "deslocamento": "#d62728"}
+    cores = {"reducao": "#1f77b4", "deslocamento": "#d62728", "ampliacao": "#2ca02c"}
     for ax, r in zip(eixos[0], runs):
         for modo, grupo in r["exp3"].groupby("modo"):
             grupo = grupo.sort_values("nivel_alvo")

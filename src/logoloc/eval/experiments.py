@@ -136,7 +136,7 @@ def experimento3(
             gt = inst.bbox.as_xyxy()
             for modo in modos:
                 for nivel in niveis:
-                    caixa, obtido = degradar(gt, nivel, modo, record.width)
+                    caixa, obtido = degradar(gt, nivel, modo, record.width, record.height)
                     caixas.append(caixa)
                     meta.append((idx, modo, nivel, obtido))
 
@@ -150,6 +150,7 @@ def experimento3(
                     "modo": modo,
                     "nivel_alvo": nivel,
                     "iou_obtido": obtido,
+                    "limitado_pela_imagem": obtido > nivel + 1e-6,
                     "classe_predita": pred.class_name,
                     "score": pred.score,
                     "prob_fundo": pred.background_score,
@@ -170,6 +171,7 @@ def resumo_experimento3(por_caixa: pd.DataFrame) -> pd.DataFrame:
         acuracia=("acerto", "mean"),
         taxa_acima_limiar=("acima_limiar", "mean"),
         taxa_fundo_vence=("fundo_vence", "mean"),
+        taxa_limitada=("limitado_pela_imagem", "mean"),
     )
     return agrupado.reset_index().sort_values(["modo", "nivel_alvo"], ascending=[True, False])
 

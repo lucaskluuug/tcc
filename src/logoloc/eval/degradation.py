@@ -4,7 +4,7 @@ import math
 
 Box = tuple[float, float, float, float]
 
-MODOS = ("reducao", "deslocamento")
+MODOS = ("reducao", "deslocamento", "ampliacao")
 NIVEIS = (1.0, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3)
 
 
@@ -45,13 +45,26 @@ def deslocar(box: Box, tau: float, largura_imagem: float) -> Box:
     return (0.0, y1, x2 - d, y2)
 
 
-def degradar(box: Box, tau: float, modo: str, largura_imagem: float) -> tuple[Box, float]:
+def ampliar(box: Box, tau: float, largura_imagem: float, altura_imagem: float) -> Box:
+    x1, y1, x2, y2 = box
+    W, H = max(largura_imagem, x2), max(altura_imagem, y2)
+    s = 1 / math.sqrt(tau)
+    nova_w, nova_h = min((x2 - x1) * s, W), min((y2 - y1) * s, H)
+    cx, cy = (x1 + x2) / 2, (y1 + y2) / 2
+    nx1 = min(max(cx - nova_w / 2, 0.0), W - nova_w)
+    ny1 = min(max(cy - nova_h / 2, 0.0), H - nova_h)
+    return (nx1, ny1, nx1 + nova_w, ny1 + nova_h)
+
+
+def degradar(box: Box, tau: float, modo: str, largura_imagem: float, altura_imagem: float) -> tuple[Box, float]:
     if tau >= 1.0:
         return box, 1.0
     if modo == "reducao":
         nova = reduzir(box, tau)
     elif modo == "deslocamento":
         nova = deslocar(box, tau, largura_imagem)
+    elif modo == "ampliacao":
+        nova = ampliar(box, tau, largura_imagem, altura_imagem)
     else:
         raise ValueError(f"modo desconhecido: {modo}")
     return nova, iou_xyxy(box, nova)
