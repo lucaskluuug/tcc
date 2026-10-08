@@ -8,7 +8,7 @@ from pathlib import Path
 import pandas as pd
 
 from ..data.records import ImageRecord
-from .degradation import MODOS, NIVEIS, degradar, iou_xyxy
+from .degradation import MODOS, NIVEIS, TIPO_DIRECAO, degradar, iou_xyxy
 from .metrics import GTBox, PredBox, compute_detection_prf1, compute_map, error_decomposition
 from .predictors import FullPredictor
 from .roi_classifier import RoIClassifier
@@ -136,11 +136,11 @@ def experimento3(
             gt = inst.bbox.as_xyxy()
             for modo in modos:
                 for nivel in niveis:
-                    caixa, obtido = degradar(gt, nivel, modo, record.width, record.height)
-                    caixas.append(caixa)
-                    meta.append((idx, modo, nivel, obtido))
+                    for direcao, caixa, obtido in degradar(gt, nivel, modo, record.width, record.height):
+                        caixas.append(caixa)
+                        meta.append((idx, modo, nivel, direcao, obtido))
 
-        for (idx, modo, nivel, obtido), pred in zip(meta, classify(record.image_path, caixas)):
+        for (idx, modo, nivel, direcao, obtido), pred in zip(meta, classify(record.image_path, caixas)):
             verdadeira = record.instances[idx].class_name
             linhas.append(
                 {
@@ -149,6 +149,8 @@ def experimento3(
                     "classe_verdadeira": verdadeira,
                     "modo": modo,
                     "nivel_alvo": nivel,
+                    "direcao": direcao,
+                    "tipo_direcao": TIPO_DIRECAO[direcao],
                     "iou_obtido": obtido,
                     "limitado_pela_imagem": obtido > nivel + 1e-6,
                     "classe_predita": pred.class_name,
@@ -164,16 +166,41 @@ def experimento3(
     return pd.DataFrame(linhas)
 
 
-def resumo_experimento3(por_caixa: pd.DataFrame) -> pd.DataFrame:
-    agrupado = por_caixa.groupby(["modo", "nivel_alvo"]).agg(
+METRICAS_CAIXA = ["acerto", "acima_limiar", "fundo_vence", "iou_obtido", "limitado_pela_imagem"]
+
+
+def media_por_logotipo(por_caixa: pd.DataFrame, chaves: list[str]) -> pd.DataFrame:
+    df = por_caixa.assign(caixa_na_borda=por_caixa["direcao"] == "borda")
+    return df.groupby([*chaves, "image_id", "instancia"]).agg(
+        **{m: (m, "mean") for m in METRICAS_CAIXA},
+        caixa_na_borda=("caixa_na_borda", "max"),
+        n_caixas=("acerto", "size"),
+    ).reset_index()
+
+
+def _agregar(por_logotipo: pd.DataFrame, chaves: list[str]) -> pd.DataFrame:
+    agrupado = por_logotipo.groupby(chaves).agg(
         n=("acerto", "size"),
+        caixas_por_logotipo=("n_caixas", "mean"),
         iou_medio=("iou_obtido", "mean"),
         acuracia=("acerto", "mean"),
         taxa_acima_limiar=("acima_limiar", "mean"),
         taxa_fundo_vence=("fundo_vence", "mean"),
         taxa_limitada=("limitado_pela_imagem", "mean"),
+        taxa_cortada_na_borda=("caixa_na_borda", "mean"),
     )
-    return agrupado.reset_index().sort_values(["modo", "nivel_alvo"], ascending=[True, False])
+    return agrupado.reset_index()
+
+
+def resumo_experimento3(por_caixa: pd.DataFrame) -> pd.DataFrame:
+    chaves = ["modo", "nivel_alvo"]
+    return _agregar(media_por_logotipo(por_caixa, chaves), chaves).sort_values(chaves, ascending=[True, False])
+
+
+def resumo_direcoes(por_caixa: pd.DataFrame) -> pd.DataFrame:
+    desl = por_caixa[(por_caixa["modo"] == "deslocamento") & por_caixa["tipo_direcao"].isin(["horizontal", "vertical", "diagonal"])]
+    chaves = ["tipo_direcao", "nivel_alvo"]
+    return _agregar(media_por_logotipo(desl, chaves), chaves).sort_values(chaves, ascending=[True, False])
 
 
 def resumo_experimento2(por_caixa: pd.DataFrame) -> dict:
@@ -203,6 +230,7 @@ def salvar(
     por_caixa.to_csv(output_dir / "exp3_por_caixa.csv", index=False)
     resumo_exp3 = resumo_experimento3(por_caixa)
     resumo_exp3.to_csv(output_dir / "exp3_resumo.csv", index=False)
+    resumo_direcoes(por_caixa).to_csv(output_dir / "exp3_direcoes.csv", index=False)
 
     resumo = {
         "run_name": run_name,

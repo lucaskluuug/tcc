@@ -13,6 +13,8 @@ def carregar(run_dir: str | Path) -> dict:
     with open(run_dir / "experimentos" / "resumo.json", encoding="utf-8") as f:
         dados = json.load(f)
     dados["exp3"] = pd.read_csv(run_dir / "experimentos" / "exp3_resumo.csv")
+    direcoes = run_dir / "experimentos" / "exp3_direcoes.csv"
+    dados["direcoes"] = pd.read_csv(direcoes) if direcoes.exists() else None
     antigo = run_dir / "summary.json"
     if antigo.exists():
         with open(antigo, encoding="utf-8") as f:
@@ -96,6 +98,26 @@ def tabela_degradacao(runs: list[dict]) -> pd.DataFrame:
     if "taxa_limitada" in df.columns and (df["modo"] == "ampliacao").any():
         ampl = df[df["modo"] == "ampliacao"].set_index(["modelo", "nivel_alvo"])[["iou_medio", "taxa_limitada"]]
         largo = largo.join(ampl.add_suffix("_ampliacao"))
+    if "caixas_por_logotipo" in df.columns and (df["modo"] == "deslocamento").any():
+        desl = df[df["modo"] == "deslocamento"].set_index(["modelo", "nivel_alvo"])[["caixas_por_logotipo", "taxa_cortada_na_borda"]]
+        desl = desl.rename(columns={"caixas_por_logotipo": "direcoes_por_logotipo"})
+        largo = largo.join(desl.add_suffix("_deslocamento"))
+    return largo.reset_index().sort_values(["modelo", "nivel_alvo"], ascending=[True, False])
+
+
+def tabela_direcoes(runs: list[dict]) -> pd.DataFrame | None:
+    partes = []
+    for r in runs:
+        if r.get("direcoes") is None:
+            continue
+        df = r["direcoes"].copy()
+        df["modelo"] = r["run_name"]
+        partes.append(df)
+    if not partes:
+        return None
+    df = pd.concat(partes)
+    largo = df.pivot_table(index=["modelo", "nivel_alvo"], columns="tipo_direcao", values=["acuracia", "taxa_acima_limiar"])
+    largo.columns = [f"{metrica}_{tipo}" for metrica, tipo in largo.columns]
     return largo.reset_index().sort_values(["modelo", "nivel_alvo"], ascending=[True, False])
 
 
@@ -155,8 +177,12 @@ def gerar_relatorio(runs: list[dict], output_dir: str | Path) -> Path:
         "Experimentos 1 e 2: marca atribuída a cada logotipo, sem limiar de confiança": tabela_exp1_vs_exp2(runs),
         "Experimento 2: recorte versus injeção": tabela_protocolos(runs),
         "Experimento 3: degradação por nível de IoU": tabela_degradacao(runs),
+        "Experimento 3: deslocamento por tipo de direção": tabela_direcoes(runs),
     }
-    nomes_csv = ["tabela_exp1_deteccao", "tabela_exp1_vs_exp2", "tabela_exp2_protocolos", "tabela_exp3_degradacao"]
+    nomes_csv = [
+        "tabela_exp1_deteccao", "tabela_exp1_vs_exp2", "tabela_exp2_protocolos",
+        "tabela_exp3_degradacao", "tabela_exp3_direcoes",
+    ]
 
     linhas = ["# Resultados dos experimentos", ""]
     for (titulo, df), nome in zip(tabelas.items(), nomes_csv):

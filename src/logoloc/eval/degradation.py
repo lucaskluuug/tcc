@@ -7,6 +7,29 @@ Box = tuple[float, float, float, float]
 MODOS = ("reducao", "deslocamento", "ampliacao")
 NIVEIS = (1.0, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3)
 
+DIRECOES = {
+    "direita": (1, 0),
+    "esquerda": (-1, 0),
+    "baixo": (0, 1),
+    "cima": (0, -1),
+    "baixo_direita": (1, 1),
+    "cima_direita": (1, -1),
+    "baixo_esquerda": (-1, 1),
+    "cima_esquerda": (-1, -1),
+}
+TIPO_DIRECAO = {
+    "direita": "horizontal",
+    "esquerda": "horizontal",
+    "baixo": "vertical",
+    "cima": "vertical",
+    "baixo_direita": "diagonal",
+    "cima_direita": "diagonal",
+    "baixo_esquerda": "diagonal",
+    "cima_esquerda": "diagonal",
+    "borda": "borda",
+    "": "",
+}
+
 
 def iou_xyxy(a: Box, b: Box) -> float:
     ix1, iy1 = max(a[0], b[0]), max(a[1], b[1])
@@ -26,7 +49,22 @@ def reduzir(box: Box, tau: float) -> Box:
     return (cx - meia_w, cy - meia_h, cx + meia_w, cy + meia_h)
 
 
-def deslocar(box: Box, tau: float, largura_imagem: float) -> Box:
+def transladar(box: Box, tau: float, sentido_x: int, sentido_y: int) -> Box:
+    x1, y1, x2, y2 = box
+    w, h = x2 - x1, y2 - y1
+    if sentido_x and sentido_y:
+        fracao = 1 - math.sqrt(2 * tau / (1 + tau))
+    else:
+        fracao = (1 - tau) / (1 + tau)
+    dx, dy = sentido_x * fracao * w, sentido_y * fracao * h
+    return (x1 + dx, y1 + dy, x2 + dx, y2 + dy)
+
+
+def cabe(box: Box, largura_imagem: float, altura_imagem: float) -> bool:
+    return box[0] >= 0 and box[1] >= 0 and box[2] <= largura_imagem and box[3] <= altura_imagem
+
+
+def deslocar_cortando_na_borda(box: Box, tau: float, largura_imagem: float) -> Box:
     x1, y1, x2, y2 = box
     w = x2 - x1
     W = max(largura_imagem, x2)
@@ -45,6 +83,18 @@ def deslocar(box: Box, tau: float, largura_imagem: float) -> Box:
     return (0.0, y1, x2 - d, y2)
 
 
+def deslocamentos(box: Box, tau: float, largura_imagem: float, altura_imagem: float) -> list[tuple[str, Box]]:
+    W, H = max(largura_imagem, box[2]), max(altura_imagem, box[3])
+    validas = []
+    for nome, (sx, sy) in DIRECOES.items():
+        nova = transladar(box, tau, sx, sy)
+        if cabe(nova, W, H):
+            validas.append((nome, nova))
+    if validas:
+        return validas
+    return [("borda", deslocar_cortando_na_borda(box, tau, largura_imagem))]
+
+
 def ampliar(box: Box, tau: float, largura_imagem: float, altura_imagem: float) -> Box:
     x1, y1, x2, y2 = box
     W, H = max(largura_imagem, x2), max(altura_imagem, y2)
@@ -56,15 +106,17 @@ def ampliar(box: Box, tau: float, largura_imagem: float, altura_imagem: float) -
     return (nx1, ny1, nx1 + nova_w, ny1 + nova_h)
 
 
-def degradar(box: Box, tau: float, modo: str, largura_imagem: float, altura_imagem: float) -> tuple[Box, float]:
+def degradar(
+    box: Box, tau: float, modo: str, largura_imagem: float, altura_imagem: float
+) -> list[tuple[str, Box, float]]:
     if tau >= 1.0:
-        return box, 1.0
+        return [("", box, 1.0)]
     if modo == "reducao":
-        nova = reduzir(box, tau)
+        candidatas = [("", reduzir(box, tau))]
     elif modo == "deslocamento":
-        nova = deslocar(box, tau, largura_imagem)
+        candidatas = deslocamentos(box, tau, largura_imagem, altura_imagem)
     elif modo == "ampliacao":
-        nova = ampliar(box, tau, largura_imagem, altura_imagem)
+        candidatas = [("", ampliar(box, tau, largura_imagem, altura_imagem))]
     else:
         raise ValueError(f"modo desconhecido: {modo}")
-    return nova, iou_xyxy(box, nova)
+    return [(direcao, nova, iou_xyxy(box, nova)) for direcao, nova in candidatas]
