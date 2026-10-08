@@ -18,7 +18,6 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from logoloc.config import load_project_config
 from logoloc.eval.consolidate import build_comparison_table, load_saved_evaluation, plot_iou_vs_classification
-from logoloc.eval.sensitivity import plot_sensitivity_from_dirs
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 logger = logging.getLogger(__name__)
@@ -49,10 +48,6 @@ def main() -> None:
 
     plot_path = plot_iou_vs_classification(evaluations, results_dir / "iou_vs_classification.png")
     logger.info("Grafico IoU x classificacao salvo em %s", plot_path)
-
-    sens_path = plot_sensitivity_from_dirs([results_dir / name for name in run_names], results_dir / "localization_sensitivity.png")
-    if sens_path:
-        logger.info("Grafico de sensibilidade salvo em %s", sens_path)
 
 
 if __name__ == "__main__":
