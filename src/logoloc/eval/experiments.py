@@ -43,6 +43,16 @@ def detectar(records: list[ImageRecord], predict_fn: FullPredictor, log_every: i
     return preds
 
 
+def tabela_deteccoes(preds: list[PredBox]) -> pd.DataFrame:
+    return pd.DataFrame(
+        [
+            {"image_id": p.image_id, "classe": p.class_name, "score": p.score, "x1": p.box[0], "y1": p.box[1], "x2": p.box[2], "y2": p.box[3]}
+            for p in preds
+        ],
+        columns=["image_id", "classe", "score", "x1", "y1", "x2", "y2"],
+    )
+
+
 def resposta_por_logotipo(records: list[ImageRecord], preds: list[PredBox], limiares: Limiares) -> pd.DataFrame:
     por_imagem: dict[str, list[PredBox]] = {}
     for p in preds:
@@ -140,7 +150,8 @@ def experimento3(
                         caixas.append(caixa)
                         meta.append((idx, modo, nivel, direcao, obtido))
 
-        for (idx, modo, nivel, direcao, obtido), pred in zip(meta, classify(record.image_path, caixas)):
+        verdadeiras = [record.instances[idx].class_name for idx, *_ in meta]
+        for (idx, modo, nivel, direcao, obtido), pred in zip(meta, classify(record.image_path, caixas, verdadeiras)):
             verdadeira = record.instances[idx].class_name
             linhas.append(
                 {
@@ -159,6 +170,10 @@ def experimento3(
                     "acerto": pred.class_name == verdadeira,
                     "acima_limiar": pred.score > limiares.operacao,
                     "fundo_vence": pred.background_score > pred.score,
+                    "classe_segunda": pred.second_class_name,
+                    "score_segunda": pred.second_score,
+                    "prob_verdadeira": pred.true_class_score,
+                    "posicao_verdadeira": pred.true_class_rank,
                 }
             )
         if log_every and pos % log_every == 0:
@@ -223,10 +238,13 @@ def salvar(
     resumo_exp1: dict,
     por_logotipo: pd.DataFrame,
     por_caixa: pd.DataFrame,
+    deteccoes: pd.DataFrame | None = None,
 ) -> Path:
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
     por_logotipo.to_csv(output_dir / "exp1_por_logotipo.csv", index=False)
+    if deteccoes is not None:
+        deteccoes.to_csv(output_dir / "exp1_deteccoes.csv.gz", index=False, float_format="%.6g", compression="gzip")
     por_caixa.to_csv(output_dir / "exp3_por_caixa.csv", index=False)
     resumo_exp3 = resumo_experimento3(por_caixa)
     resumo_exp3.to_csv(output_dir / "exp3_resumo.csv", index=False)

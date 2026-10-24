@@ -28,7 +28,7 @@ import torch
 from logoloc.config import load_dataclass_yaml, load_project_config
 from logoloc.data.label_map import inverse, load_label_map
 from logoloc.data.splits import prepare_dataset
-from logoloc.eval.experiments import Limiares, detectar, experimento1, experimento3, salvar
+from logoloc.eval.experiments import Limiares, detectar, experimento1, experimento3, salvar, tabela_deteccoes
 from logoloc.eval.predictors import faster_rcnn_predictor
 from logoloc.eval.roi_classifier import roi_classifier
 from logoloc.models.faster_rcnn import FasterRCNNConfig, build_faster_rcnn
@@ -81,7 +81,7 @@ def main() -> None:
     por_caixa = experimento3(records_p3, roi_classifier(model, device, id_to_name), limiares)
 
     output_dir = project_cfg.resolved_path(project_cfg.paths.outputs_dir) / "results" / args.run_name / "experimentos"
-    caminho = salvar(output_dir, args.run_name, limiares, resumo_exp1, por_logotipo, por_caixa)
+    caminho = salvar(output_dir, args.run_name, limiares, resumo_exp1, por_logotipo, por_caixa, deteccoes=tabela_deteccoes(preds))
 
     with open(caminho, encoding="utf-8") as f:
         resumo = json.load(f)

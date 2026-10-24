@@ -49,6 +49,10 @@ def validate_split(records: list[ImageRecord], split: str, cfg: ProjectConfig) -
         logger.info("Split %s validado: %d classes, %d no-logo, tudo conforme esperado.", split, len(per_class), len(no_logo))
 
 
+def select_training_records(records_by_split: dict[str, list[ImageRecord]], splits: tuple[str, ...]) -> list[ImageRecord]:
+    return [r for split in splits for r in records_by_split[split] if not r.is_no_logo]
+
+
 def prepare_dataset(cfg: ProjectConfig, force: bool = False) -> dict[str, list[ImageRecord]]:
     raw_dir = cfg.resolved_path(cfg.paths.raw_dir)
     cache_dir = cfg.resolved_path(cfg.paths.cache_dir)

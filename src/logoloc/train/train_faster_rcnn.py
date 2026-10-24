@@ -13,7 +13,7 @@ from ..config import ProjectConfig, load_dataclass_yaml, load_project_config
 from ..data.augment import generate_augmented_p1
 from ..data.convert_torchvision import FlickrLogosDetectionDataset, collate_fn, num_classes_with_background
 from ..data.label_map import load_label_map
-from ..data.splits import prepare_dataset
+from ..data.splits import prepare_dataset, select_training_records
 from ..models.faster_rcnn import FasterRCNNConfig, build_faster_rcnn
 from ..seed import set_global_seed
 from ..utils.run_log import RunLogger
@@ -26,16 +26,19 @@ def build_datasets(project_cfg: ProjectConfig, force_prepare: bool = False):
     records_by_split = prepare_dataset(project_cfg, force=force_prepare)
     label_map = load_label_map(project_cfg.resolved_path(project_cfg.paths.processed_dir) / "label_map.json")
 
-    p1 = records_by_split["P1"]
+    splits = project_cfg.dataset.train_splits
+    train_records = select_training_records(records_by_split, splits)
+    logger.info("Treino com %s: %d imagens com logotipo", "+".join(splits), len(train_records))
     if project_cfg.augmentation.enabled:
-        p1 = generate_augmented_p1(
-            p1,
+        split_tag = "_".join(s.lower() for s in splits)
+        train_records = generate_augmented_p1(
+            train_records,
             project_cfg.augmentation,
-            output_dir=project_cfg.resolved_path(project_cfg.paths.processed_dir) / "p1_augmented",
+            output_dir=project_cfg.resolved_path(project_cfg.paths.processed_dir) / f"{split_tag}_augmented",
             seed=project_cfg.seed,
         )
 
-    train_ds = FlickrLogosDetectionDataset(p1, label_map)
+    train_ds = FlickrLogosDetectionDataset(train_records, label_map)
     val_ds = FlickrLogosDetectionDataset(records_by_split["P2"], label_map)
     return train_ds, val_ds, label_map
 
@@ -163,6 +166,8 @@ def train_faster_rcnn(
             "start_epoch": start_epoch,
             "total_epochs": model_cfg.epochs,
             "label_map_size": len(label_map),
+            "train_splits": list(project_cfg.dataset.train_splits),
+            "train_images": len(train_ds),
         }
     )
     if checkpoint_backup_dir is not None:

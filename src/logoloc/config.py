@@ -53,6 +53,7 @@ class DatasetConfig:
     images_per_class_test: int = 30
     no_logo_images_val: int = 3000
     no_logo_images_test: int = 3000
+    train_splits: tuple[str, ...] = ("P1",)
 
 
 @dataclasses.dataclass

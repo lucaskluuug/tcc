@@ -74,15 +74,15 @@ def generate_augmented_p1(
                 augmented.append(
                     ImageRecord(
                         image_path=out_path,
-                        split="P1",
+                        split=record.split,
                         width=w,
                         height=h,
                         instances=instances,
                         image_id=f"{record.image_id}__aug{copy_idx}",
                     )
                 )
-        logger.info("Augmentation de P1: %d imagens originais -> +%d copias aumentadas.", len(p1_records), len(augmented))
+        logger.info("Augmentation do treino: %d imagens originais -> +%d copias aumentadas.", len(p1_records), len(augmented))
         return p1_records + augmented
 
-    cache_path = output_dir.parent / "p1_augmented_records.pkl"
+    cache_path = output_dir.parent / f"{output_dir.name}_records.pkl"
     return cached(cache_path, _compute, force=force)
