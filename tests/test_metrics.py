@@ -153,8 +153,27 @@ def test_error_decomposition_all_categories():
     assert result.background_error == 1
     assert result.both_error == 0
     assert result.duplicate == 0
-    assert result.missed == 1
-    assert result.true_positive + result.missed == len(gts)
+    assert result.missed == 0
+
+
+def test_error_decomposition_class_error_is_not_missed():
+    gts = [GTBox(image_id="img1", class_name="x", box=(0, 0, 10, 10))]
+    preds = [PredBox(image_id="img1", class_name="y", box=(0, 0, 10, 10), score=0.9)]
+
+    result = error_decomposition(gts, preds, fg_iou_threshold=0.5, bg_iou_floor=0.1)
+
+    assert result.classification_error == 1
+    assert result.missed == 0
+
+
+def test_error_decomposition_localization_error_is_not_missed():
+    gts = [GTBox(image_id="img1", class_name="x", box=(0, 0, 10, 10))]
+    preds = [PredBox(image_id="img1", class_name="x", box=(4, 4, 14, 14), score=0.9)]
+
+    result = error_decomposition(gts, preds, fg_iou_threshold=0.5, bg_iou_floor=0.1)
+
+    assert result.localization_error == 1
+    assert result.missed == 0
 
 
 def test_error_decomposition_duplicate_detection():

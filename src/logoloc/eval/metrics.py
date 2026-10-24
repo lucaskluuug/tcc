@@ -242,6 +242,7 @@ def error_decomposition(
     for i, gt in enumerate(all_gts):
         gt_by_image.setdefault(gt.image_id, []).append(i)
     consumed = np.zeros(len(all_gts), dtype=bool)
+    covered = np.zeros(len(all_gts), dtype=bool)
 
     preds_sorted = sorted(all_preds, key=lambda p: p.score, reverse=True)
     tp = cls_err = loc_err = both_err = dup = bkg_err = 0
@@ -262,6 +263,7 @@ def error_decomposition(
         if best_iou >= fg_iou_threshold:
             if not class_correct:
                 cls_err += 1
+                covered[best_gi] = True
             elif not consumed[best_gi]:
                 tp += 1
                 consumed[best_gi] = True
@@ -270,10 +272,11 @@ def error_decomposition(
         else:
             if class_correct:
                 loc_err += 1
+                covered[best_gi] = True
             else:
                 both_err += 1
 
-    missed = int((~consumed).sum())
+    missed = int((~consumed & ~covered).sum())
     return ErrorDecomposition(
         true_positive=tp,
         classification_error=cls_err,
