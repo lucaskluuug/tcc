@@ -37,20 +37,43 @@ def detectar(records: list[ImageRecord], predict_fn: FullPredictor, log_every: i
     preds: list[PredBox] = []
     for pos, record in enumerate(records, 1):
         for det in predict_fn(record.image_path):
-            preds.append(PredBox(image_id=record.image_id, class_name=det.class_name, box=det.box_xyxy, score=det.score))
+            preds.append(
+                PredBox(
+                    image_id=record.image_id,
+                    class_name=det.class_name,
+                    box=det.box_xyxy,
+                    score=det.score,
+                    proposal=det.proposal_xyxy,
+                )
+            )
         if log_every and pos % log_every == 0:
             logger.info("  deteccao: %d/%d imagens", pos, len(records))
     return preds
 
 
+COLUNAS_DETECCOES = ["image_id", "classe", "score", "x1", "y1", "x2", "y2", "px1", "py1", "px2", "py2"]
+
+
 def tabela_deteccoes(preds: list[PredBox]) -> pd.DataFrame:
-    return pd.DataFrame(
-        [
-            {"image_id": p.image_id, "classe": p.class_name, "score": p.score, "x1": p.box[0], "y1": p.box[1], "x2": p.box[2], "y2": p.box[3]}
-            for p in preds
-        ],
-        columns=["image_id", "classe", "score", "x1", "y1", "x2", "y2"],
-    )
+    linhas = []
+    for p in preds:
+        proposta = p.proposal if p.proposal is not None else (None, None, None, None)
+        linhas.append(
+            {
+                "image_id": p.image_id,
+                "classe": p.class_name,
+                "score": p.score,
+                "x1": p.box[0],
+                "y1": p.box[1],
+                "x2": p.box[2],
+                "y2": p.box[3],
+                "px1": proposta[0],
+                "py1": proposta[1],
+                "px2": proposta[2],
+                "py2": proposta[3],
+            }
+        )
+    return pd.DataFrame(linhas, columns=COLUNAS_DETECCOES)
 
 
 def resposta_por_logotipo(records: list[ImageRecord], preds: list[PredBox], limiares: Limiares) -> pd.DataFrame:
@@ -68,8 +91,9 @@ def resposta_por_logotipo(records: list[ImageRecord], preds: list[PredBox], limi
             if sobrepostas:
                 escolhida, iou = max(sobrepostas, key=lambda par: par[0].score)
                 classe, score = escolhida.class_name, escolhida.score
+                iou_proposta = iou_xyxy(escolhida.proposal, gt) if escolhida.proposal is not None else None
             else:
-                classe, score, iou = None, 0.0, 0.0
+                classe, score, iou, iou_proposta = None, 0.0, 0.0, 0.0
             linhas.append(
                 {
                     "image_id": record.image_id,
@@ -79,6 +103,7 @@ def resposta_por_logotipo(records: list[ImageRecord], preds: list[PredBox], limi
                     "classe_predita": classe,
                     "score": score,
                     "iou": iou,
+                    "iou_proposta": iou_proposta,
                     "acerto": classe == inst.class_name,
                     "acima_limiar": score > limiares.operacao,
                 }
@@ -114,6 +139,7 @@ def experimento1(
 
     por_logotipo = resposta_por_logotipo(records, preds, limiares)
     localizados = por_logotipo[por_logotipo["localizado"]]
+    propostas = localizados["iou_proposta"].dropna()
     resumo = {
         "deteccao": deteccao,
         "decomposicao_erros": dataclasses.asdict(decomposicao),
@@ -125,6 +151,8 @@ def experimento1(
             "taxa_nao_localizado": float(1 - por_logotipo["localizado"].mean()),
             "iou_mediano": float(localizados["iou"].median()) if len(localizados) else 0.0,
             "iou_medio": float(localizados["iou"].mean()) if len(localizados) else 0.0,
+            "iou_proposta_mediano": float(propostas.median()) if len(propostas) else None,
+            "iou_proposta_medio": float(propostas.mean()) if len(propostas) else None,
         },
     }
     return resumo, por_logotipo

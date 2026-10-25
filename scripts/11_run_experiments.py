@@ -74,7 +74,7 @@ def main() -> None:
     )
 
     logger.info("Experimento 1: deteccao sobre %d imagens, sem limiar de confianca", len(records_p3))
-    preds = detectar(records_p3, faster_rcnn_predictor(model, device, id_to_name))
+    preds = detectar(records_p3, faster_rcnn_predictor(model, device, id_to_name, return_proposals=True))
     resumo_exp1, por_logotipo = experimento1(records_p3, preds, class_names, limiares)
 
     logger.info("Experimentos 2 e 3: injecao das caixas anotadas e degradadas")

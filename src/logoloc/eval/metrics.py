@@ -18,6 +18,7 @@ class PredBox:
     class_name: str
     box: tuple[float, float, float, float]
     score: float
+    proposal: tuple[float, float, float, float] | None = None
 
 
 def iou_xyxy(box_a: tuple[float, float, float, float], box_b: tuple[float, float, float, float]) -> float:

@@ -61,6 +61,7 @@ def tabela_exp1_vs_exp2(runs: list[dict]) -> pd.DataFrame:
                 "acima_limiar_exp2": ideal["taxa_acima_limiar"],
                 "nao_localizado_exp1": modelo["taxa_nao_localizado"],
                 "iou_mediano_exp1": modelo["iou_mediano"],
+                "iou_proposta_mediano_exp1": modelo.get("iou_proposta_mediano"),
                 "acuracia_exp2_acima_limiar": ideal["acuracia_acima_limiar"],
                 "acuracia_exp2_abaixo_limiar": ideal["acuracia_abaixo_limiar"],
             }
@@ -136,7 +137,8 @@ def grafico_degradacao(runs: list[dict], caminho: str | Path, limiar_treino: flo
                 alpha=0.7, label=f"{nome}: viraria detecção",
             )
         exp1 = r["experimento1"]["por_logotipo"]
-        ax.plot(exp1["iou_mediano"], exp1["acuracia"], marker="*", markersize=14, color="black", linestyle="none",
+        iou_exp1 = exp1.get("iou_proposta_mediano") or exp1["iou_mediano"]
+        ax.plot(iou_exp1, exp1["acuracia"], marker="*", markersize=14, color="black", linestyle="none",
                 label="Detector (Exp. 1)")
         ax.axvline(limiar_treino, color="gray", linestyle=":", linewidth=1)
         ax.annotate("limiar de treino", xy=(limiar_treino, 0.95), xytext=(4, 0), textcoords="offset points",
